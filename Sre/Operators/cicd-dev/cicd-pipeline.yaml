@@ -90,7 +90,7 @@ spec:
         - name: git-source
           workspace: git-source
 
-    # deploy all ace in dev namespace
+    # deploy ace sre in dev namespace
     - name: deploy-wait-ace-sre
       runAfter:
         - build-ace-sre
