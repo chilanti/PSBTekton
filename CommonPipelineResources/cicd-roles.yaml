@@ -1,4 +1,4 @@
-# Role for the test task in postgres namespace
+# Role for the test task in the postgres namespace
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
