@@ -1,0 +1,15 @@
+apiVersion: v1
+imagePullSecrets:
+- name: pipeline-dockercfg-xgr4n
+kind: ServiceAccount
+metadata:
+  creationTimestamp: "2020-10-30T00:44:52Z"
+  name: pipeline
+  namespace: cp4i
+  resourceVersion: "183184"
+  selfLink: /api/v1/namespaces/cp4i/serviceaccounts/pipeline
+  uid: d5639e00-cf7e-4542-862c-d94557f6a2ee
+secrets:
+- name: pipeline-token-rhb8j
+- name: pipeline-dockercfg-xgr4n
+- name: ghe-secret

@@ -33,3 +33,4 @@ keystore.p12
 setdbparms.txt
 DefaultPolicies.zip
 PostgresqlPolicy.policyxml
+*secret*.yaml
