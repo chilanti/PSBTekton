@@ -4,7 +4,7 @@ demo uses a Tekton pipeline to build images and deploy them for 4 App Connect
 Integration Servers and 1 MQ server. Future versions of this demo will build
 upon this.
 
-# Prerequisites
+# Prerequisites - change
 A [script](prereqs.sh) is provided to setup the prerequisits for this demo
 and this script is automatically run as part of the 1-click demo preparation.
 The script carries out the following:
