@@ -29,8 +29,8 @@ function usage() {
 
 # default vars
 namespace="cp4i"
-branch="main"
-repo="git@github.ibm.com:cloudpakbringup/PSBPipelines.git"
+branch="master"
+repo="https://github.com/chilanti/PSBTekton.git"
 tick="\xE2\x9C\x85"
 cross="\xE2\x9D\x8C"
 all_done="\xF0\x9F\x92\xAF"

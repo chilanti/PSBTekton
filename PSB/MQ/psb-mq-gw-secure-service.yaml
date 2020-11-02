@@ -1,0 +1,20 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: psb-mq-gw-secure
+  namespace: cp4i
+spec:
+  ports:
+    - name: qmgr
+      protocol: TCP
+      port: 1415
+      targetPort: 1415
+  selector:
+    app.kubernetes.io/component: integration
+    app.kubernetes.io/instance: psb-mq-gw
+    app.kubernetes.io/managed-by: operator
+    app.kubernetes.io/name: ibm-mq
+  type: ClusterIP
+  sessionAffinity: None
+status:
+  loadBalancer: {}

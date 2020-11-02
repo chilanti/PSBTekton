@@ -31,7 +31,7 @@ spec:
         buildah --storage-driver vfs bud \
           -f /workspace/git-source/Sre/Operators/Dockerfiles/$(params.dockerfile) \
           -t image-registry.openshift-image-registry.svc:5000/{{NAMESPACE}}/$(params.imageName):$(params.imageTag) \
-          /workspace/git-source/securityContext/$(params.contextPath)
+          /workspace/git-source/Sre/$(params.contextPath)
         buildah --storage-driver vfs push \
           --tls-verify=false \
           image-registry.openshift-image-registry.svc:5000/{{NAMESPACE}}/$(params.imageName):$(params.imageTag)

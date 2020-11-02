@@ -1,0 +1,843 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: psb-mq-config
+data:
+  psb-mq-gw.mqsc: |
+    ALTER QMGR +
+      CCSID(819) +
+      CERTLABL('ibmwebspheremqpsbqmgw1') +
+      CHLEV(ENABLED) +
+      CLWLUSEQ(LOCAL) +
+      CONNAUTH('SYSTEM.DEFAULT.AUTHINFO.IDPWOS') +
+      MAXUMSGS(20000) +
+      PERFMEV(ENABLED) +
+      SSLCRYP(' ') +
+      SSLKEYR('/var/mqm/qmgrs/PSBQMGW1/ssl/key') +
+      SUITEB(NONE) +
+      FORCE
+    DEFINE CHANNEL('PSB.SRV.ADMIN.01') +
+      CHLTYPE(SVRCONN) +
+      DESCR('MQ server conn channel for admin conns') +
+      MCAUSER('mqm') +
+      TRPTYPE(TCP) +
+      REPLACE
+    DEFINE CHANNEL('PSB.SRV.APP.01') +
+      CHLTYPE(SVRCONN) +
+      DESCR('MQ server conn channel for Application') +
+      TRPTYPE(TCP) +
+      REPLACE
+    DEFINE CHANNEL('PSB.TO.TARGET') +
+      CHLTYPE(SDR) +
+      CONNAME('localhost(21414)') +
+      DESCR('PSB Gateway to Target') +
+      TRPTYPE(TCP) +
+      XMITQ('GSB') +
+      REPLACE
+    DEFINE CHANNEL('TARGET.TO.PSB') +
+      CHLTYPE(RCVR) +
+      DESCR('PSB Target to Gateway') +
+      TRPTYPE(TCP) +
+      REPLACE
+    DEFINE LISTENER('PSB.LISTENER.TCP.SECURE') +
+      TRPTYPE(TCP) +
+      CONTROL(MANUAL) +
+      PORT(1415) +
+      DESCR('MQ listener secure') +
+      REPLACE
+    DEFINE SERVICE('MQPROMETHEUS') +
+      SERVTYPE(SERVER) +
+      STARTCMD('/usr/local/bin/mq_prometheus.sh') +
+      STARTARG('PSBQMGW1 GSB,Q.*,SYSTEM.CLUSTER.TRANSMIT.QUEUE PSB.*,TO.*') +
+      STOPCMD('/usr/bin/kill') +
+      STOPARG('+MQ_SERVER_PID+') +
+      STDOUT('/mnt/mqm/error/mq_prometheus.out') +
+      STDERR('/mnt/mqm/error/mq_prometheus.out') +
+      DESCR('MQ exporter for Prometheus') +
+      REPLACE
+    SET CHLAUTH('PSB.SRV.ADMIN.01') +
+      TYPE(USERMAP) +
+      DESCR('Allow a specific client id to connect as mqm') +
+      CLNTUSER('admin') +
+      MCAUSER('mqm') +
+      USERSRC(MAP) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.ADMIN.01') +
+      TYPE(ADDRESSMAP) +
+      DESCR('Block all user IDs') +
+      ADDRESS('*') +
+      USERSRC(NOACCESS) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.ADMIN.01') +
+      TYPE(BLOCKUSER) +
+      DESCR('Rule to override *MQADMIN blockuser on this channel') +
+      USERLIST('nobody') +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.APP.01') +
+      TYPE(USERMAP) +
+      DESCR('Allow a specific client id to connect as mqm') +
+      CLNTUSER('mqfloor') +
+      MCAUSER('mqfloor') +
+      USERSRC(MAP) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.APP.01') +
+      TYPE(USERMAP) +
+      DESCR('Allow a specific client id to connect as mqm') +
+      CLNTUSER('mqgsb') +
+      MCAUSER('mqgsb') +
+      USERSRC(MAP) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.APP.01') +
+      TYPE(USERMAP) +
+      DESCR('Allow a specific client id to connect as mqm') +
+      CLNTUSER('speed') +
+      MCAUSER('mqapps') +
+      USERSRC(MAP) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.APP.01') +
+      TYPE(ADDRESSMAP) +
+      DESCR('Block all user IDs') +
+      ADDRESS('*') +
+      USERSRC(NOACCESS) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.APP.01') +
+      TYPE(BLOCKUSER) +
+      DESCR('Rule to override *MQADMIN blockuser on this channel') +
+      USERLIST('nobody') +
+      ACTION(REPLACE)
+    SET AUTHREC +
+      PROFILE('PSB.SRV.APP.01') +
+      GROUP('mqm') +
+      OBJTYPE(CHANNEL) +
+      AUTHADD(CHG,DLT,DSP,CTRL,CTRLX)
+    SET AUTHREC +
+      PROFILE('TARGET.TO.PSB') +
+      GROUP('mqm') +
+      OBJTYPE(CHANNEL) +
+      AUTHADD(CHG,DLT,DSP,CTRL,CTRLX)
+    SET AUTHREC +
+      PROFILE('PSB.LISTENER.TCP.SECURE') +
+      GROUP('mqm') +
+      OBJTYPE(LISTENER) +
+      AUTHADD(CHG,DLT,DSP,CTRL)
+    SET AUTHREC +
+      PROFILE('MQPROMETHEUS') +
+      GROUP('mqm') +
+      OBJTYPE(SERVICE) +
+      AUTHADD(CHG,DLT,DSP,CTRL)
+    SET AUTHREC +
+      PROFILE('PSB.TO.TARGET') +
+      GROUP('mqm') +
+      OBJTYPE(CHANNEL) +
+      AUTHADD(CHG,DLT,DSP,CTRL,CTRLX)
+    SET AUTHREC +
+      PROFILE('self') +
+      GROUP('mqm') +
+      OBJTYPE(QMGR) +
+      AUTHADD(ALTUSR,CHG,CONNECT,DLT,DSP,INQ,SET,SETALL,SETID,CTRL,SYSTEM)
+    SET AUTHREC +
+      PROFILE('self') +
+      GROUP('mqgsb') +
+      OBJTYPE(QMGR) +
+      AUTHADD(CONNECT,DSP,INQ,SET,SETALL)
+    SET AUTHREC +
+      PROFILE('self') +
+      GROUP('mqfloor') +
+      OBJTYPE(QMGR) +
+      AUTHADD(CONNECT,DSP,INQ,SET,SETALL)
+    SET AUTHREC +
+      PROFILE('self') +
+      GROUP('mqapps') +
+      OBJTYPE(QMGR) +
+      AUTHADD(ALTUSR,CONNECT,DSP,INQ,SET,SETALL)
+    SET AUTHREC +
+      PROFILE('@class') +
+      GROUP('mqgsb') +
+      OBJTYPE(QMGR) +
+      AUTHADD(NONE)
+    SET AUTHREC +
+      PROFILE('@class') +
+      GROUP('mqfloor') +
+      OBJTYPE(QMGR) +
+      AUTHADD(NONE)
+    SET AUTHREC +
+      PROFILE('@class') +
+      GROUP('mqapps') +
+      OBJTYPE(QMGR) +
+      AUTHADD(NONE)
+    SET AUTHREC +
+      PROFILE('PSB.SRV.ADMIN.01') +
+      GROUP('mqm') +
+      OBJTYPE(CHANNEL) +
+      AUTHADD(CHG,DLT,DSP,CTRL,CTRLX)
+    START LISTENER('PSB.LISTENER.TCP.SECURE')
+  psb-mq-ace.mqsc: |
+    ALTER QMGR +
+    *  ADVCAP(ENABLED) +
+    *  ALTDATE(2020-10-08) +
+    *  ALTTIME(20.30.03) +
+      CCSID(819) +
+      CERTLABL('ibmwebspheremqpsbqmsre1') +
+      CHLEV(ENABLED) +
+      CLWLUSEQ(LOCAL) +
+    *  COMMANDQ(SYSTEM.ADMIN.COMMAND.QUEUE) +
+      CONNAUTH('SYSTEM.DEFAULT.AUTHINFO.IDPWOS') +
+    *  CRDATE(2020-10-08) +
+    *  CRTIME(20.25.03) +
+      MAXUMSGS(20000) +
+      PERFMEV(ENABLED) +
+    *  QMID(PSBQMSRE1_2020-10-08_20.25.03) +
+      SSLCRYP(' ') +
+      SSLKEYR('/var/mqm/qmgrs/PSBQMSRE1/ssl/key') +
+      SUITEB(NONE) +
+    *  VERSION(09010500) +
+    *  XRCAP(YES) +
+      FORCE
+    DEFINE QLOCAL('Q.PSB.DEMO.MQTT.IN.01') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.57) +
+      BOQNAME('Q.PSB.DEMO.MQTT.IN.01.BQ') +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.57) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.DEMO.MQTT.IN.01.BQ') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.51) +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.51) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.DEMO.MQTT.PROVIDER.01') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.57) +
+      BOQNAME('Q.PSB.DEMO.MQTT.PROVIDER.01.BQ') +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.57) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+    *  IPPROCS(1) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.DEMO.MQTT.PROVIDER.01.BQ') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.52) +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.52) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.DEMO.RESPONSE.01') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.56) +
+      BOQNAME('Q.PSB.DEMO.RESPONSE.01.BQ') +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.56) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+    *  IPPROCS(1) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.DEMO.RESPONSE.01.BQ') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.50) +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.50) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.DEMO.WEBSERVICE.PROVIDER.01') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.55) +
+      BOQNAME('Q.PSB.DEMO.WEBSERVICE.PROVIDER.01.BQ') +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.55) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+    *  IPPROCS(1) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.DEMO.WEBSERVICE.PROVIDER.01.BQ') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.49) +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.49) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.LOGERROR') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.58) +
+      BOQNAME('Q.PSB.LOGERROR.BQ') +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.58) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+    *  IPPROCS(1) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.LOGERROR.BQ') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.52) +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.52) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.LOGGING') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.59) +
+      BOQNAME('Q.PSB.LOGGING.BQ') +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.59) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+    *  IPPROCS(1) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.LOGGING.BQ') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.53) +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.53) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.TO.BULK') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.00) +
+      BOQNAME('Q.PSB.TO.BULK.BQ') +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.44.00) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+    *  IPPROCS(1) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE QLOCAL('Q.PSB.TO.BULK.BQ') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.43.54) +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15.43.54) +
+      DEFBIND(NOTFIXED) +
+      DEFPSIST(YES) +
+      DISTL(NO) +
+      MAXDEPTH(645000) +
+      MAXMSGL(104194304) +
+      QDEPTHHI(30) +
+      QDEPTHLO(10) +
+      QDPHIEV(ENABLED) +
+      QDPLOEV(ENABLED) +
+      QSVCIEV(HIGH) +
+      QSVCINT(120000) +
+      REPLACE
+    DEFINE CHANNEL('PSB.SRV.ACE.01') +
+      CHLTYPE(SVRCONN) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.31) +
+      DESCR('MQ server conn channel for MessageSight') +
+      TRPTYPE(TCP) +
+      REPLACE
+    DEFINE CHANNEL('PSB.SRV.ADMIN.01') +
+      CHLTYPE(SVRCONN) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.30) +
+      DESCR('MQ server conn channel for admin conns') +
+      MCAUSER('mqm') +
+      TRPTYPE(TCP) +
+      REPLACE
+    DEFINE CHANNEL('PSB.SRV.MS.01') +
+      CHLTYPE(SVRCONN) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.30) +
+      DESCR('MQ server conn channel for MessageSight') +
+      TRPTYPE(TCP) +
+      REPLACE
+    DEFINE LISTENER('PSB.LISTENER.TCP.SECURE') +
+      TRPTYPE(TCP) +
+      CONTROL(MANUAL) +
+      PORT(1415) +
+      DESCR('MQ listener secure') +
+    *  ALTDATE(2020-10-08) +
+    *  ALTTIME(20.30.12) +
+      REPLACE
+    DEFINE SERVICE('ACEPROMETHEUS') +
+      SERVTYPE(SERVER) +
+      STARTCMD('/usr/local/bin/ace_prometheus.sh') +
+      STARTARG('PSBIS localhost 4414 /metrics 9158') +
+      STOPCMD('/usr/bin/kill') +
+      STOPARG('+MQ_SERVER_PID+') +
+      STDOUT('/mnt/mqm/error/mq_prometheus.out') +
+      STDERR('/mnt/mqm/error/mq_prometheus.out') +
+      DESCR('ACE exporter for Prometheus') +
+    *  ALTDATE(2020-10-08) +
+    *  ALTTIME(20.30.07) +
+      REPLACE
+    DEFINE SERVICE('MQPROMETHEUS') +
+      SERVTYPE(SERVER) +
+      STARTCMD('/usr/local/bin/mq_prometheus.sh') +
+      STARTARG('PSBQMSRE1 Q.*,SYSTEM.CLUSTER.TRANSMIT.QUEUE PSB.*,TO.*') +
+      STOPCMD('/usr/bin/kill') +
+      STOPARG('+MQ_SERVER_PID+') +
+      STDOUT('/mnt/mqm/error/mq_prometheus.out') +
+      STDERR('/mnt/mqm/error/mq_prometheus.out') +
+      DESCR('MQ exporter for Prometheus') +
+    *  ALTDATE(2020-10-08) +
+    *  ALTTIME(20.30.04) +
+      REPLACE
+    DEFINE TOPIC('Q.PSB.DEMO.2800') +
+      TOPICSTR('PSB/DEMO/2800') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.22) +
+      REPLACE
+    DEFINE TOPIC('Q.PSB.DEMO.TEST') +
+      TOPICSTR('PSB/DEMO/TEST') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.23) +
+      REPLACE
+    DEFINE SUB('Q.PSB.DEMO.MQTTHTTP.01') +
+      TOPICSTR('BODYSHOP/+/+/MQTTHTTP/#') +
+      TOPICOBJ('Q.PSB.DEMO.2800') +
+    *  DISTYPE(DEFINED) +
+      DEST('Q.PSB.DEMO.MQTT.IN.01') +
+      PUBACCT(0431303031000000000000000000000000000000000000000000000000000006) +
+      DESTCORL(414D5120505342514D535245312020208144865F60B1DF2E) +
+      PSPROP(RFH2) +
+    *  SUBTYPE(ADMIN) +
+      SUBUSER('mqm') +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15:44:28) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15:44:28) +
+      REPLACE
+    DEFINE SUB('Q.PSB.DEMO.MQTTHTTPS.01') +
+      TOPICSTR('BODYSHOP/+/+/MQTTHTTPS/#') +
+      TOPICOBJ('Q.PSB.DEMO.2800') +
+    *  DISTYPE(DEFINED) +
+      DEST('Q.PSB.DEMO.MQTT.IN.01') +
+      PUBACCT(0431303031000000000000000000000000000000000000000000000000000006) +
+      DESTCORL(414D5120505342514D535245312020208144865F69B1DF2E) +
+      PSPROP(RFH2) +
+    *  SUBTYPE(ADMIN) +
+      SUBUSER('mqm') +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15:44:29) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15:44:29) +
+      REPLACE
+    DEFINE SUB('Q.PSB.DEMO.MQTTDIREKT.01') +
+      TOPICSTR('BODYSHOP/+/+/MQTTDIREKT/#') +
+      TOPICOBJ('Q.PSB.DEMO.2800') +
+    *  DISTYPE(DEFINED) +
+      DEST('Q.PSB.DEMO.MQTT.IN.01') +
+      PUBACCT(0431303031000000000000000000000000000000000000000000000000000006) +
+      DESTCORL(414D5120505342514D535245312020208144865F5AB1DF2E) +
+      PSPROP(RFH2) +
+    *  SUBTYPE(ADMIN) +
+      SUBUSER('mqm') +
+    *  CRDATE(2020-10-20) +
+    *  CRTIME(15:44:27) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15:44:27) +
+      REPLACE
+    SET CHLAUTH('PSB.SRV.ACE.01') +
+      TYPE(USERMAP) +
+      DESCR('Allow a specific client id to connect as mqm') +
+      CLNTUSER('speed') +
+      MCAUSER('mqapps') +
+      USERSRC(MAP) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.39) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.ACE.01') +
+      TYPE(ADDRESSMAP) +
+      DESCR('Block all user IDs') +
+      ADDRESS('*') +
+      USERSRC(NOACCESS) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.34) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.ACE.01') +
+      TYPE(BLOCKUSER) +
+      DESCR('Rule to override *MQADMIN blockuser on this channel') +
+      USERLIST('nobody') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.36) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.ADMIN.01') +
+      TYPE(USERMAP) +
+      DESCR('Allow a specific client id to connect as mqm') +
+      CLNTUSER('admin') +
+      MCAUSER('mqm') +
+      USERSRC(MAP) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.37) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.ADMIN.01') +
+      TYPE(ADDRESSMAP) +
+      DESCR('Block all user IDs') +
+      ADDRESS('*') +
+      USERSRC(NOACCESS) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.32) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.ADMIN.01') +
+      TYPE(BLOCKUSER) +
+      DESCR('Rule to override *MQADMIN blockuser on this channel') +
+      USERLIST('nobody') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.34) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.MS.01') +
+      TYPE(USERMAP) +
+      DESCR('Allow a specific client id to connect as mqm') +
+      CLNTUSER('speed') +
+      MCAUSER('mqapps') +
+      USERSRC(MAP) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.38) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.MS.01') +
+      TYPE(ADDRESSMAP) +
+      DESCR('Block all user IDs') +
+      ADDRESS('*') +
+      USERSRC(NOACCESS) +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.33) +
+      ACTION(REPLACE)
+    SET CHLAUTH('PSB.SRV.MS.01') +
+      TYPE(BLOCKUSER) +
+      DESCR('Rule to override *MQADMIN blockuser on this channel') +
+      USERLIST('nobody') +
+    *  ALTDATE(2020-10-20) +
+    *  ALTTIME(15.44.35) +
+      ACTION(REPLACE)
+    SET AUTHREC +
+      PROFILE('Q.PSB.TO.BULK') +
+      GROUP('mqm') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,CHG,CLR,DLT,DSP,GET,INQ,PUT,PASSALL,PASSID,SET,SETALL,SETID)
+    SET AUTHREC +
+      PROFILE('Q.PSB.TO.BULK') +
+      GROUP('mqapps') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,GET,INQ,PUT,PASSALL,SETALL)
+    SET AUTHREC +
+      PROFILE('PSB.LISTENER.TCP.SECURE') +
+      GROUP('mqm') +
+      OBJTYPE(LISTENER) +
+      AUTHADD(CHG,DLT,DSP,CTRL)
+    SET AUTHREC +
+      PROFILE('Q.PSB.LOGERROR') +
+      GROUP('mqm') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,CHG,CLR,DLT,DSP,GET,INQ,PUT,PASSALL,PASSID,SET,SETALL,SETID)
+    SET AUTHREC +
+      PROFILE('Q.PSB.LOGERROR') +
+      GROUP('mqapps') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,GET,INQ,PUT,PASSALL,SETALL)
+    SET AUTHREC +
+      PROFILE('MQPROMETHEUS') +
+      GROUP('mqm') +
+      OBJTYPE(SERVICE) +
+      AUTHADD(CHG,DLT,DSP,CTRL)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.RESPONSE.01.BQ') +
+      GROUP('mqm') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,CHG,CLR,DLT,DSP,GET,INQ,PUT,PASSALL,PASSID,SET,SETALL,SETID)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.WEBSERVICE.PROVIDER.01.BQ') +
+      GROUP('mqm') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,CHG,CLR,DLT,DSP,GET,INQ,PUT,PASSALL,PASSID,SET,SETALL,SETID)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.MQTT.IN.01') +
+      GROUP('mqm') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,CHG,CLR,DLT,DSP,GET,INQ,PUT,PASSALL,PASSID,SET,SETALL,SETID)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.MQTT.IN.01') +
+      GROUP('mqapps') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,GET,INQ,PUT,PASSALL,SETALL)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.MQTT.IN.01') +
+      GROUP('mqgsb') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(GET,INQ,SETALL)
+    SET AUTHREC +
+      PROFILE('Q.PSB.LOGGING') +
+      GROUP('mqm') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,CHG,CLR,DLT,DSP,GET,INQ,PUT,PASSALL,PASSID,SET,SETALL,SETID)
+    SET AUTHREC +
+      PROFILE('Q.PSB.LOGGING') +
+      GROUP('mqapps') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,GET,INQ,PUT,PASSALL,SETALL)
+    SET AUTHREC +
+      PROFILE('PSB.SRV.MS.01') +
+      GROUP('mqm') +
+      OBJTYPE(CHANNEL) +
+      AUTHADD(CHG,DLT,DSP,CTRL,CTRLX)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.MQTT.IN.01.BQ') +
+      GROUP('mqm') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,CHG,CLR,DLT,DSP,GET,INQ,PUT,PASSALL,PASSID,SET,SETALL,SETID)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.2800') +
+      GROUP('mqm') +
+      OBJTYPE(TOPIC) +
+      AUTHADD(CHG,CLR,DLT,DSP,PASSALL,PASSID,SETALL,SETID,CTRL,PUB,SUB,RESUME)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.2800') +
+      GROUP('mqapps') +
+      OBJTYPE(TOPIC) +
+      AUTHADD(DSP,SETALL,PUB,SUB,RESUME)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.RESPONSE.01') +
+      GROUP('mqm') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,CHG,CLR,DLT,DSP,GET,INQ,PUT,PASSALL,PASSID,SET,SETALL,SETID)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.RESPONSE.01') +
+      GROUP('mqapps') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,GET,INQ,PUT,PASSALL,SETALL)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.RESPONSE.01') +
+      GROUP('mqgsb') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(GET,INQ,SETALL)
+    SET AUTHREC +
+      PROFILE('self') +
+      GROUP('mqm') +
+      OBJTYPE(QMGR) +
+      AUTHADD(ALTUSR,CHG,CONNECT,DLT,DSP,INQ,SET,SETALL,SETID,CTRL,SYSTEM)
+    SET AUTHREC +
+      PROFILE('self') +
+      GROUP('mqgsb') +
+      OBJTYPE(QMGR) +
+      AUTHADD(CONNECT,DSP,INQ,SET,SETALL)
+    SET AUTHREC +
+      PROFILE('self') +
+      GROUP('mqfloor') +
+      OBJTYPE(QMGR) +
+      AUTHADD(CONNECT,DSP,INQ,SET,SETALL)
+    SET AUTHREC +
+      PROFILE('self') +
+      GROUP('mqapps') +
+      OBJTYPE(QMGR) +
+      AUTHADD(ALTUSR,CONNECT,DSP,INQ,SET,SETALL)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.WEBSERVICE.PROVIDER.01') +
+      GROUP('mqapps') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,GET,INQ,PUT,PASSALL,SETALL)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.WEBSERVICE.PROVIDER.01') +
+      GROUP('mqgsb') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(GET,INQ,SETALL)
+    SET AUTHREC +
+      PROFILE('Q.PSB.LOGERROR.BQ') +
+      GROUP('mqm') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,CHG,CLR,DLT,DSP,GET,INQ,PUT,PASSALL,PASSID,SET,SETALL,SETID)
+    SET AUTHREC +
+      PROFILE('@class') +
+      GROUP('mqapps') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(CRT)
+    SET AUTHREC +
+      PROFILE('@class') +
+      GROUP('mqgsb') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(NONE)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.TEST') +
+      GROUP('mqm') +
+      OBJTYPE(TOPIC) +
+      AUTHADD(CHG,CLR,DLT,DSP,PASSALL,PASSID,SETALL,SETID,CTRL,PUB,SUB,RESUME)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.TEST') +
+      GROUP('mqapps') +
+      OBJTYPE(TOPIC) +
+      AUTHADD(DSP,SETALL,PUB,SUB,RESUME)
+    SET AUTHREC +
+      PROFILE('@class') +
+      GROUP('mqgsb') +
+      OBJTYPE(QMGR) +
+      AUTHADD(NONE)
+    SET AUTHREC +
+      PROFILE('@class') +
+      GROUP('mqfloor') +
+      OBJTYPE(QMGR) +
+      AUTHADD(NONE)
+    SET AUTHREC +
+      PROFILE('@class') +
+      GROUP('mqapps') +
+      OBJTYPE(QMGR) +
+      AUTHADD(NONE)
+    SET AUTHREC +
+      PROFILE('PSB.SRV.ADMIN.01') +
+      GROUP('mqm') +
+      OBJTYPE(CHANNEL) +
+      AUTHADD(CHG,DLT,DSP,CTRL,CTRLX)
+    SET AUTHREC +
+      PROFILE('@class') +
+      GROUP('mqapps') +
+      OBJTYPE(TOPIC) +
+      AUTHADD(NONE)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.MQTT.PROVIDER.01.BQ') +
+      GROUP('mqm') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,CHG,CLR,DLT,DSP,GET,INQ,PUT,PASSALL,PASSID,SET,SETALL,SETID)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.MQTT.PROVIDER.01') +
+      GROUP('mqm') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,CHG,CLR,DLT,DSP,GET,INQ,PUT,PASSALL,PASSID,SET,SETALL,SETID)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.MQTT.PROVIDER.01') +
+      GROUP('mqapps') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,GET,INQ,PUT,PASSALL,SETALL)
+    SET AUTHREC +
+      PROFILE('Q.PSB.DEMO.MQTT.PROVIDER.01') +
+      GROUP('mqgsb') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(GET,INQ,SETALL)
+    SET AUTHREC +
+      PROFILE('SYSTEM.BASE.TOPIC') +
+      GROUP('mqapps') +
+      OBJTYPE(TOPIC) +
+      AUTHADD(DSP)
+    SET AUTHREC +
+      PROFILE('PSB.SRV.ACE.01') +
+      GROUP('mqm') +
+      OBJTYPE(CHANNEL) +
+      AUTHADD(CHG,DLT,DSP,CTRL,CTRLX)
+    SET AUTHREC +
+      PROFILE('SYSTEM.IMA.**') +
+      GROUP('mqapps') +
+      OBJTYPE(QUEUE) +
+      AUTHADD(BROWSE,DSP,GET,PUT)
+    START LISTENER('PSB.LISTENER.TCP.SECURE')
