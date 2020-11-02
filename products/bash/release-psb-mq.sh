@@ -49,7 +49,7 @@ while getopts "n:z:t" opt; do
       ;;
     t ) tracing_enabled=true
       ;;
-    \? ) usage; exit
+    \? ) echo "Option not supported " $OPTARG
       ;;
   esac
 done
