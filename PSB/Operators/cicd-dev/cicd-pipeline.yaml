@@ -59,7 +59,7 @@ spec:
         - name: imageTag
           value: "$(params.imageTag)"
         - name: imageName
-          value: "ace-api"
+          value: "ace-sre"
         - name: dockerfile
           value: "ACE-SRE.Dockerfile"
         - name: contextPath

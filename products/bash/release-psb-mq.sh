@@ -112,4 +112,11 @@ done
 #     echo -e "\n----------------------------------------------------------------------------------------------------------------------------------------------------------"
 #   done
 # fi
+echo "Creating ConfigMap with MQ configuration..."
 oc apply -f /workspace/git-source/PSB/MQ/psb-mq-config.yaml
+echo "Creating MQ Gateway Queue Manager, secure listener, and service"
+oc apply -f /workspace/git-source/PSB/MQ/psbmqgw.yaml
+oc apply -f /workspace/git-source/PSB/MQ/psb-mq-gw-secure-service.yaml
+echo "Creating MQ SRE Queue Manager, secure listener, and service"
+oc apply -f /workspace/git-source/PSB/MQ/psbmqgw.yaml
+oc apply -f /workspace/git-source/PSB/MQ/psb-mq-sre-secure-service.yaml
