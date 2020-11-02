@@ -22,10 +22,10 @@
 #   With overridden values
 #     ./cicd-apply-test-pipeline.sh -n <namespace> -r <repo> -b <branch>
 
-function usage() {
-  echo "Usage: $0 -n <namespace> -r <repo> -b <branch>"
-  exit 1
-}
+# function usage() {
+#   echo "Usage: $0 -n <namespace> -r <repo> -b <branch>"
+#   exit 1
+# }
 
 # default vars
 namespace="cp4i"
