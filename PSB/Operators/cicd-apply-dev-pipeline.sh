@@ -48,8 +48,7 @@ while getopts "n:r:b:" opt; do
     branch="$OPTARG"
     ;;
   \?)
-    usage
-    exit
+    #usage
     ;;
   esac
 done
